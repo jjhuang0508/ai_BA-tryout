@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>晋亿实业 (601000.SH) - 股票行情面板</title>
+    <meta name="description" content="晋亿实业股票行情可视化面板，显示 K 线图、成交量图和实时统计数据">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header .stock-info {
+            font-size: 1.2em;
+            color: #8892b0;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,217,255,0.2);
+        }
+        
+        .stat-card .label {
+            font-size: 0.9em;
+            color: #8892b0;
+            margin-bottom: 10px;
+        }
+        
+        .stat-card .value {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+        
+        .stat-card .value.up {
+            color: #ff4757;
+        }
+        
+        .stat-card .value.down {
+            color: #2ed573;
+        }
+        
+        .chart-container {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .chart-title {
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            padding-left: 15px;
+            border-left: 4px solid #00d9ff;
+        }
+        
+        #kline-chart {
+            width: 100%;
+            height: 500px;
+        }
+        
+        #volume-chart {
+            width: 100%;
+            height: 300px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(102,126,234,0.4);
+        }
+        
+        .btn.active {
+            background: linear-gradient(135deg, #00d9ff 0%, #00ff88 100%);
+        }
+        
+        .data-info {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 30px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .data-info h3 {
+            margin-bottom: 15px;
+            color: #00d9ff;
+        }
+        
+        .data-info p {
+            color: #8892b0;
+            line-height: 1.8;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2em;
+            color: #8892b0;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 30px 0;
+            color: #8892b0;
+            font-size: 0.9em;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            #kline-chart, #volume-chart {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📈 晋亿实业</h1>
+            <div class="stock-info">股票代码：601000.SH | 数据周期：近一年</div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn active" onclick="setPeriod('all')">全部</button>
+            <button class="btn" onclick="setPeriod('6m')">近 6 个月</button>
+            <button class="btn" onclick="setPeriod('3m')">近 3 个月</button>
+            <button class="btn" onclick="setPeriod('1m')">近 1 个月</button>
+            <button class="btn" onclick="refreshData()">🔄 刷新数据</button>
+        </div>
+        
+        <div class="stats-grid" id="stats-grid">
+            <div class="stat-card">
+                <div class="label">最新价</div>
+                <div class="value" id="latest-price">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">涨跌幅</div>
+                <div class="value" id="price-change">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">最高价</div>
+                <div class="value" id="high-price">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">最低价</div>
+                <div class="value" id="low-price">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">成交量 (手)</div>
+                <div class="value" id="total-volume">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">成交额 (元)</div>
+                <div class="value" id="total-amount">--</div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">📊 K 线图</div>
+            <div id="kline-chart"></div>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">📈 成交量图</div>
+            <div id="volume-chart"></div>
+        </div>
+        
+        <div class="data-info">
+            <h3>📋 数据说明</h3>
+            <p>
+                <strong>数据来源：</strong> TuShare Pro (https://tushare.pro)<br>
+                <strong>股票名称：</strong> 晋亿实业股份有限公司<br>
+                <strong>股票代码：</strong> 601000.SH<br>
+                <strong>数据周期：</strong> 日线数据，包含开盘价、最高价、最低价、收盘价、成交量、成交额<br>
+                <strong>更新方式：</strong> 点击"刷新数据"按钮可重新从 TuShare 获取最新数据<br>
+                <strong>本地存储：</strong> 数据自动保存在 601000_stock_data.csv 和 601000_stock_data.json
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>© 2026 股票行情面板 | Powered by ECharts & TuShare</p>
+        </div>
+    </div>
+    
+    <script>
+        let stockData = [];
+        let klineChart = null;
+        let volumeChart = null;
+        let currentPeriod = 'all';
+        
+        // 初始化图表
+        function initCharts() {
+            klineChart = echarts.init(document.getElementById('kline-chart'));
+            volumeChart = echarts.init(document.getElementById('volume-chart'));
+            
+            window.addEventListener('resize', () => {
+                klineChart.resize();
+                volumeChart.resize();
+            });
+        }
+        
+        // 加载数据
+        async function loadData() {
+            try {
+                const response = await fetch('601000_stock_data.json');
+                if (!response.ok) {
+                    throw new Error('数据文件不存在');
+                }
+                stockData = await response.json();
+                
+                if (stockData.length === 0) {
+                    showLoading('暂无数据，请先运行 fetch_tushare_data.py 获取数据');
+                    return;
+                }
+                
+                updateStats(stockData);
+                renderCharts(stockData);
+                
+            } catch (error) {
+                showLoading(`数据加载失败：${error.message}<br><br>请确保 601000_stock_data.json 文件存在`);
+            }
+        }
+        
+        // 显示加载信息
+        function showLoading(message) {
+            document.getElementById('kline-chart').innerHTML = 
+                `<div class="loading">${message}</div>`;
+            document.getElementById('volume-chart').innerHTML = 
+                `<div class="loading">等待数据...</div>`;
+        }
+        
+        // 更新统计数据
+        function updateStats(data) {
+            const latest = data[data.length - 1];
+            const prev = data[data.length - 2] || latest;
+            
+            const change = latest.close - prev.close;
+            const changePercent = (change / prev.close) * 100;
+            
+            document.getElementById('latest-price').textContent = latest.close.toFixed(2);
+            document.getElementById('latest-price').className = 'value ' + (change >= 0 ? 'up' : 'down');
+            
+            document.getElementById('price-change').textContent = 
+                `${change >= 0 ? '+' : ''}${change.toFixed(2)} (${changePercent.toFixed(2)}%)`;
+            document.getElementById('price-change').className = 'value ' + (change >= 0 ? 'up' : 'down');
+            
+            // 计算周期内的最高最低价
+            const highs = data.map(d => d.high);
+            const lows = data.map(d => d.low);
+            
+            document.getElementById('high-price').textContent = Math.max(...highs).toFixed(2);
+            document.getElementById('low-price').textContent = Math.min(...lows).toFixed(2);
+            
+            // 计算总成交量和成交额
+            const totalVol = data.reduce((sum, d) => sum + d.volume, 0);
+            const totalAmt = data.reduce((sum, d) => sum + (d.amount || 0), 0);
+            
+            document.getElementById('total-volume').textContent = (totalVol / 10000).toFixed(2) + '万';
+            document.getElementById('total-amount').textContent = (totalAmt / 100000000).toFixed(2) + '亿';
+        }
+        
+        // 渲染图表
+        function renderCharts(data) {
+            const dates = data.map(d => d.date);
+            const klineData = data.map(d => [d.open, d.close, d.low, d.high]);
+            
+            // K 线图配置
+            const klineOption = {
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'cross' },
+                    formatter: function(params) {
+                        const d = data[params[0].dataIndex];
+                        return `
+                            <div style="padding: 10px;">
+                                <div><strong>日期：</strong>${d.date}</div>
+                                <div><strong>开盘：</strong>${d.open.toFixed(2)}</div>
+                                <div><strong>收盘：</strong>${d.close.toFixed(2)}</div>
+                                <div><strong>最高：</strong>${d.high.toFixed(2)}</div>
+                                <div><strong>最低：</strong>${d.low.toFixed(2)}</div>
+                                <div><strong>成交量：</strong>${(d.volume/10000).toFixed(2)}万手</div>
+                            </div>
+                        `;
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '3%',
+                    bottom: '10%',
+                    top: '5%'
+                },
+                xAxis: {
+                    type: 'category',
+                    data: dates,
+                    scale: true,
+                    boundaryGap: false,
+                    axisLine: { lineStyle: { color: '#8892b0' } },
+                    axisLabel: { 
+                        color: '#8892b0',
+                        rotate: 45,
+                        interval: Math.floor(dates.length / 20)
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    scale: true,
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+                    axisLabel: { color: '#8892b0' }
+                },
+                series: [{
+                    type: 'candlestick',
+                    data: klineData,
+                    itemStyle: {
+                        color: '#ff4757',
+                        color0: '#2ed573',
+                        borderColor: '#ff4757',
+                        borderColor0: '#2ed573'
+                    }
+                }]
+            };
+            
+            // 成交量图配置
+            const volumeOption = {
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function(params) {
+                        const d = data[params[0].dataIndex];
+                        return `
+                            <div style="padding: 10px;">
+                                <div><strong>日期：</strong>${d.date}</div>
+                                <div><strong>成交量：</strong>${(d.volume/10000).toFixed(2)}万手</div>
+                                <div><strong>成交额：</strong>${((d.amount || 0)/100000000).toFixed(2)}亿元</div>
+                            </div>
+                        `;
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '3%',
+                    top: '10%',
+                    bottom: '15%'
+                },
+                xAxis: {
+                    type: 'category',
+                    data: dates,
+                    scale: true,
+                    boundaryGap: false,
+                    axisLine: { lineStyle: { color: '#8892b0' } },
+                    axisLabel: { 
+                        color: '#8892b0',
+                        rotate: 45,
+                        interval: Math.floor(dates.length / 20)
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+                    axisLabel: { color: '#8892b0' }
+                },
+                series: [{
+                    type: 'bar',
+                    data: data.map(d => d.volume),
+                    itemStyle: {
+                        color: function(params) {
+                            const idx = params.dataIndex;
+                            return data[idx].open > data[idx].close ? '#ff4757' : '#2ed573';
+                        }
+                    }
+                }]
+            };
+            
+            klineChart.setOption(klineOption, { notMerge: true });
+            volumeChart.setOption(volumeOption, { notMerge: true });
+        }
+        
+        // 设置周期
+        function setPeriod(period) {
+            currentPeriod = period;
+            
+            // 更新按钮状态
+            document.querySelectorAll('.controls .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            let filteredData = [...stockData];
+            
+            if (period === '6m') {
+                const sixMonthsAgo = new Date();
+                sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+                const dateStr = sixMonthsAgo.toISOString().slice(0,10).replace(/-/g,'');
+                filteredData = stockData.filter(d => d.date >= dateStr);
+            } else if (period === '3m') {
+                const threeMonthsAgo = new Date();
+                threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+                const dateStr = threeMonthsAgo.toISOString().slice(0,10).replace(/-/g,'');
+                filteredData = stockData.filter(d => d.date >= dateStr);
+            } else if (period === '1m') {
+                const oneMonthAgo = new Date();
+                oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+                const dateStr = oneMonthAgo.toISOString().slice(0,10).replace(/-/g,'');
+                filteredData = stockData.filter(d => d.date >= dateStr);
+            }
+            
+            updateStats(filteredData);
+            renderCharts(filteredData);
+        }
+        
+        // 刷新数据
+        function refreshData() {
+            alert('如需更新数据，请重新运行 fetch_tushare_data.py 脚本并重新上传 601000_stock_data.json 文件到 GitHub');
+        }
+        
+        // 页面加载完成后初始化
+        window.addEventListener('load', () => {
+            initCharts();
+            loadData();
+        });
+    </script>
+</body>
+</html>
