@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微软 (MSFT) 策略对比 | SMA5/20 vs 优化版</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f2f5; padding: 10px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        .header {
+            background: white; border-radius: 10px; padding: 15px 20px;
+            margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .header h1 { color: #2c3e50; font-size: 1.5em; }
+        .header .subtitle { color: #7f8c8d; font-size: 0.85em; margin-top: 3px; }
+        
+        .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        
+        .strat-card {
+            background: white; border-radius: 10px; padding: 12px 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .strat-card h2 { font-size: 1em; margin-bottom: 6px; }
+        .strat-card .ret { font-size: 1.6em; font-weight: bold; }
+        .ret.up { color: #27ae60; } .ret.down { color: #e74c3c; }
+        .strat-card .detail { color: #555; font-size: 0.8em; margin-top: 4px; line-height: 1.6; }
+        .winner-badge {
+            display: inline-block; padding: 2px 8px; border-radius: 4px;
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white; font-weight: bold; font-size: 0.75em; margin-bottom: 4px;
+        }
+        
+        .chart-container {
+            background: white; border-radius: 10px; padding: 12px 15px;
+            margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .chart-container h2 { color: #2c3e50; margin-bottom: 8px; font-size: 1em; }
+        
+        .signal-section {
+            background: white; border-radius: 10px; padding: 12px 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .signal-section h2 { color: #2c3e50; margin-bottom: 10px; font-size: 1em; }
+        .signal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
+        .st { width: 100%; border-collapse: collapse; font-size: 0.8em; }
+        .st th { padding: 5px 8px; text-align: left; border-bottom: 1px solid #ddd; color: #2c3e50; font-weight: 600; }
+        .st td { padding: 4px 8px; border-bottom: 1px solid #eee; color: #34495e; }
+        
+        .tag-b { display: inline-block; padding: 1px 6px; border-radius: 3px;
+            background: #27ae60; color: white; font-weight: bold; font-size: 0.75em; }
+        .tag-s { display: inline-block; padding: 1px 6px; border-radius: 3px;
+            background: #e74c3c; color: white; font-weight: bold; font-size: 0.75em; }
+        
+        .update-time { text-align: center; color: #999; font-size: 0.75em; margin-top: 10px; }
+        
+        @media print {
+            body { background: white; padding: 0; }
+            .header, .strat-card, .chart-container, .signal-section { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 微软 (MSFT) 策略对比分析</h1>
+            <div class="subtitle">SMA5/20 金叉死叉策略 vs 优化版（成交量确认） | NASDAQ | 数据源：东方财富网</div>
+        </div>
+        
+        <div class="compare-grid">
+            <div class="strat-card" style="border-left: 3px solid #e74c3c;">
+                <h2 style="color:#e74c3c;">原版策略 SMA5/20</h2>
+                <div class="ret down">-1.20%</div>
+                <div class="detail">
+                    交易 7 次 | 终值 $9880.02<br>
+                    买入 4 次 | 卖出 3 次
+                </div>
+            </div>
+            <div class="strat-card" style="border-left: 3px solid #27ae60;">
+                <h2 style="color:#27ae60;">优化版 SMA5/20+量确认</h2>
+                <div><span class="winner-badge">🏆 推荐</span></div>
+                <div class="ret up">+5.61%</div>
+                <div class="detail">
+                    交易 2 次 | 终值 $10561.19<br>
+                    买入 1 次 | 卖出 3 次
+                </div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <h2>📈 原版策略 · SMA5 / SMA20 均线 + 交易信号</h2>
+            <canvas id="chartOrig" height="240"></canvas>
+        </div>
+        
+        <div class="chart-container">
+            <h2>📈 优化版策略 · SMA5/20 + 成交量确认过滤</h2>
+            <canvas id="chartOpt" height="240"></canvas>
+        </div>
+        
+        <div class="signal-section">
+            <h2>📋 交易信号明细对比</h2>
+            <div class="signal-grid">
+                <div>
+                    <h3 style="color:#e74c3c;font-size:0.9em;margin-bottom:6px;">原版策略 (7 次交易)</h3>
+                    <table class="st">
+                        <thead><tr><th>日期</th><th>类型</th><th>价格</th></tr></thead>
+                        <tbody>
+<tr><td>2026-03-04</td><td><span class="tag-b">BUY</span></td><td>$404.29</td></tr>
+<tr><td>2026-03-17</td><td><span class="tag-s">SELL</span></td><td>$398.50</td></tr>
+<tr><td>2026-04-14</td><td><span class="tag-b">BUY</span></td><td>$392.20</td></tr>
+<tr><td>2026-05-08</td><td><span class="tag-s">SELL</span></td><td>$414.21</td></tr>
+<tr><td>2026-05-20</td><td><span class="tag-b">BUY</span></td><td>$420.15</td></tr>
+<tr><td>2026-06-09</td><td><span class="tag-s">SELL</span></td><td>$403.41</td></tr>
+<tr><td>2026-07-07</td><td><span class="tag-b">BUY</span></td><td>$388.84</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div>
+                    <h3 style="color:#27ae60;font-size:0.9em;margin-bottom:6px;">优化版策略 (2 次交易)</h3>
+                    <table class="st">
+                        <thead><tr><th>日期</th><th>类型</th><th>价格</th></tr></thead>
+                        <tbody>
+<tr><td>2026-04-14</td><td><span class="tag-b">BUY</span></td><td>$392.20</td></tr>
+<tr><td>2026-05-08</td><td><span class="tag-s">SELL</span></td><td>$414.21</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="update-time">数据更新时间：2026-07-10 13:05 (Asia/Shanghai)</div>
+    </div>
+    
+    <script>
+        const data = [{"date": "2026-01-12", "open": 474.85, "close": 475.36, "high": 479.17, "low": 473.86, "volume": 23519895, "sma5": null, "sma20": null, "signal": null, "vol_ma20": null, "sig_orig": null, "sig_opt": null}, {"date": "2026-01-13", "open": 472.855, "close": 468.85, "high": 473.96, "low": 464.13, "volume": 28545800, "sma5": null, "sma20": null, "signal": null, "vol_ma20": null, "sig_orig": null, "sig_opt": null}, {"date": "2026-01-14", "open": 464.64, "close": 457.56, "high": 466.38, "low": 455.35, "volume": 28184302, "sma5": null, "sma20": null, "signal": null, "vol_ma20": null, "sig_orig": null, "sig_opt": null}, {"date": "2026-01-15", "open": 462.3, "close": 454.84, "high": 462.43, "low": 454.08, "volume": 23225839, "sma5": null, "sma20": null, "signal": null, "vol_ma20": null, "sig_orig": null, "sig_opt": null}, {"date": "2026-01-16", "open": 456.01, "close": 458.04, "high": 461.37, "low": 454.66, "volume": 34246650, "sma5": 462.93, "sma20": null, "signal": null, "vol_ma20": null, "sig_orig": null, "sig_opt": null}, {"date": "2026-01-20", "open": 449.395, "close": 452.7, "high": 454.98, "low": 447.46, "volume": 26129992, "sma5": 458.39799999999997, "sma20": null, "signal": null, "vol_ma20": null, "sig_orig": null, "sig_opt": null}, {"date": "2026-01-21", "open": 450.775, "close": 442.29, "high": 450.87, "low": 436.86, "volume": 37980510, "sma5": 453.08600000000007, "sma20": null, "signal": null, "vol_ma20": null, "sig_orig": null, "sig_opt": null}, {"date": "2026-01-22", "open": 445.8, "close": 449.32, "high": 451.02, "low": 442.88, "volume": 25349378, "sma5": 451.438, "sma20": null, "signal": null, "vol_ma20": null, "sig_orig": null, "sig_opt": null}, {"date": "2026-01-23", "open": 450.05, "close": 464.13, "high": 469.28, "low": 448.71, "volume": 38000159, "sma5": 453.296, "sma20": null, "signal": null, "vol_ma20": null, "sig_orig": null, "sig_opt": null}, {"date": "2026-01-26", "open": 463.485, "close": 468.46, "high": 472.43, "low": 460.18, "volume": 29291235, "sma5": 455.38, "sma20": null, "signal": null, "vol_ma20": null, "sig_orig": null, "sig_opt": null}, {"date": "2026-01-27", "open": 471.88, "close": 478.76, "high": 481.05, "low": 471.34, "volume": 29213923, "sma5": 460.592, "sma20": null, "signal": null, "vol_ma20": null, "sig_orig": null, "sig_opt": null}, {"date": "2026-01-28", "open": 481.39, "close": 479.81, "high": 481.92, "low": 476.18, "volume": 36875403, "sma5": 468.096, "sma20": null, "signal": null, "vol_ma20": null, "sig_orig": null, "sig_opt": null}, {"date": "2026-01-29", "open": 438.17, "close": 431.68, "high": 440.68, "low": 419.2, "volume": 128855323, "sma5": 464.5679999999999, "sma20": null, "signal": null, "vol_ma20": null, "sig_orig": null, "sig_opt": null}, {"date": "2026-01-30", "open": 437.35, "close": 428.47, "high": 437.78, "low": 424.63, "volume": 58566819, "sma5": 457.43600000000004, "sma20": null, "signal": null, "vol_ma20": null, "sig_orig": null, "sig_opt": null}, {"date": "2026-02-02", "open": 428.415, "close": 421.55, "high": 428.916, "low": 420.43, "volume": 42219858, "sma5": 448.054, "sma20": null, "signal": null, "vol_ma20": null, "sig_orig": null, "sig_opt": null}, {"date": "2026-02-03", "open": 420.19, "close": 409.39, "high": 420.23, "low": 406.74, "volume": 61424123, "sma5": 434.18, "sma20": null, "signal": null, "vol_ma20": null, "sig_orig": null, "sig_opt": null}, {"date": "2026-02-04", "open": 409.18, "close": 412.37, "high": 417.98, "low": 407.42, "volume": 45012374, "sma5": 420.692, "sma20": null, "signal": null, "vol_ma20": null, "sig_orig": null, "sig_opt": null}, {"date": "2026-02-05", "open": 405.62, "close": 391.85, "high": 406.48, "low": 390.5, "volume": 66289247, "sma5": 412.72599999999994, "sma20": null, "signal": null, "vol_ma20": null, "sig_orig": null, "sig_opt": null}, {"date": "2026-02-06", "open": 397.345, "close": 399.32, "high": 399.97, "low": 391.1, "volume": 53515311, "sma5": 406.89599999999996, "sma20": null, "signal": null, "vol_ma20": null, "sig_orig": null, "sig_opt": null}, {"date": "2026-02-09", "open": 403.03, "close": 411.78, "high": 413.07, "low": 399.05, "volume": 45480526, "sma5": 404.942, "sma20": 442.8265000000001, "signal": null, "vol_ma20": 43096333.35, "sig_orig": null, "sig_opt": null}, {"date": "2026-02-10", "open": 417.8, "close": 411.45, "high": 421.86, "low": 410.88, "volume": 44857850, "sma5": 405.354, "sma20": 439.63100000000014, "signal": null, "vol_ma20": 44163231.1, "sig_orig": null, "sig_opt": null}, {"date": "2026-02-11", "open": 414.355, "close": 402.55, "high": 414.64, "low": 399.19, "volume": 42491012, "sma5": 403.39, "sma20": 436.3160000000001, "signal": null, "vol_ma20": 44860491.7, "sig_orig": null, "sig_opt": null}, {"date": "2026-02-12", "open": 403.18, "close": 400.02, "high": 404.38, "low": 396.19, "volume": 40802362, "sma5": 405.024, "sma20": 433.439, "signal": null, "vol_ma20": 45491394.7, "sig_orig": null, "sig_opt": null}, {"date": "2026-02-13", "open": 402.63, "close": 399.5, "high": 403.72, "low": 396.23, "volume": 34091553, "sma5": 405.06, "sma20": 430.672, "signal": null, "vol_ma20": 46034680.4, "sig_orig": null, "sig_opt": null}, {"date": "2026-02-17", "open": 397.4, "close": 395.04, "high": 398.7, "low": 392.705, "volume": 32078794, "sma5": 401.712, "sma20": 427.52200000000005, "signal": null, "vol_ma20": 45926287.6, "sig_orig": null, "sig_opt": null}, {"date": "2026-02-18", "open": 396.31, "close": 397.78, "high": 400.74, "low": 394.5, "volume": 23223417, "sma5": 398.97799999999995, "sma20": 424.776, "signal": null, "vol_ma20": 45780958.85, "sig_orig": null, "sig_opt": null}, {"date": "2026-02-19", "open": 399.78, "close": 397.55, "high": 403.52, "low": 395.76, "volume": 28234001, "sma5": 397.97799999999995, "sma20": 422.53899999999993, "signal": null, "vol_ma20": 45293633.4, "sig_orig": null, "sig_opt": null}, {"date": "2026-02-20", "open": 395.2, "close": 396.32, "high": 399.206, "low": 394.25, "volume": 34015249, "sma5": 397.23799999999994, "sma20": 419.88899999999995, "signal": null, "vol_ma20": 45726926.95, "sig_orig": null, "sig_opt": null}, {"date": "2026-02-23", "open": 394.09, "close": 383.56, "high": 394.45, "low": 382.19, "volume": 43238273, "sma5": 394.04999999999995, "sma20": 415.86049999999994, "signal": null, "vol_ma20": 45988832.65, "sig_orig": null, "sig_opt": null}, {"date": "2026-02-24", "open": 383.23, "close": 388.09, "high": 388.45, "low": 380.8, "volume": 33884653, "sma5": 392.65999999999997, "sma20": 411.842, "signal": null, "vol_ma20": 46218503.55, "sig_orig": null, "sig_opt": null}, {"date": "2026-02-25", "open": 389.615, "close": 399.69, "high": 400.56, "low": 389.25, "volume": 43625483, "sma5": 393.04200000000003, "sma20": 407.88849999999996, "signal": null, "vol_ma20": 46939081.55, "sig_orig": null, "sig_opt": null}, {"date": "2026-02-26", "open": 403.8, "close": 400.81, "high": 406.58, "low": 397.83, "volume": 34405869, "sma5": 393.694, "sma20": 403.93850000000003, "signal": null, "vol_ma20": 46815604.85, "sig_orig": null, "sig_opt": null}, {"date": "2026-02-27", "open": 389.97, "close": 391.83, "high": 395.91, "low": 388.97, "volume": 51367196, "sma5": 392.79599999999994, "sma20": 401.946, "signal": null, "vol_ma20": 42941198.5, "sig_orig": null, "sig_opt": null}, {"date": "2026-03-02", "open": 391.945, "close": 397.64, "high": 400.28, "low": 389.72, "volume": 35474907, "sma5": 395.61199999999997, "sma20": 400.4045, "signal": null, "vol_ma20": 41786602.9, "sig_orig": null, "sig_opt": null}, {"date": "2026-03-03", "open": 392.23, "close": 403.02, "high": 405.79, "low": 391.76, "volume": 38199209, "sma5": 398.59799999999996, "sma20": 399.47800000000007, "signal": null, "vol_ma20": 41585570.45, "sig_orig": null, "sig_opt": null}, {"date": "2026-03-04", "open": 400.355, "close": 404.29, "high": 410.123, "low": 399.4, "volume": 35807990, "sma5": 399.518, "sma20": 399.223, "signal": "BUY", "vol_ma20": 40304763.8, "sig_orig": "BUY", "sig_opt": null}, {"date": "2026-03-05", "open": 403.51, "close": 409.77, "high": 410.7, "low": 403.49, "volume": 39001315, "sma5": 401.31, "sma20": 399.093, "signal": null, "vol_ma20": 40004210.85, "sig_orig": null, "sig_opt": null}, {"date": "2026-03-06", "open": 408.29, "close": 408.05, "high": 412.14, "low": 407.6, "volume": 31123859, "sma5": 404.554, "sma20": 399.903, "signal": null, "vol_ma20": 38245941.45, "sig_orig": null, "sig_opt": null}, {"date": "2026-03-09", "open": 404.005, "close": 408.5, "high": 409.3, "low": 402.59, "volume": 30131854, "sma5": 406.726, "sma20": 400.362, "signal": null, "vol_ma20": 37076768.6, "sig_orig": null, "sig_opt": null}, {"date": "2026-03-10", "open": 409.12, "close": 404.85, "high": 409.29, "low": 402.02, "volume": 31706375, "sma5": 407.092, "sma20": 400.01550000000003, "signal": null, "vol_ma20": 36388061.05, "sig_orig": null, "sig_opt": null}, {"date": "2026-03-11", "open": 404.66, "close": 403.97, "high": 408.1, "low": 400.68, "volume": 25512139, "sma5": 407.028, "sma20": 399.64150000000006, "signal": null, "vol_ma20": 35420775.5, "sig_orig": null, "sig_opt": null}, {"date": "2026-03-12", "open": 403.72, "close": 400.95, "high": 405.21, "low": 400.8, "volume": 27263886, "sma5": 405.264, "sma20": 399.5615, "signal": null, "vol_ma20": 34659419.2, "sig_orig": null, "sig_opt": null}, {"date": "2026-03-13", "open": 400.09, "close": 394.64, "high": 403.89, "low": 393.34, "volume": 26848000, "sma5": 402.58200000000005, "sma20": 399.2925, "signal": null, "vol_ma20": 33961701.1, "sig_orig": null, "sig_opt": null}, {"date": "2026-03-16", "open": 397.16, "close": 399.04, "high": 399.72, "low": 393.88, "volume": 27733721, "sma5": 400.68999999999994, "sma20": 399.2695, "signal": null, "vol_ma20": 33643809.5, "sig_orig": null, "sig_opt": null}, {"date": "2026-03-17", "open": 399.36, "close": 398.5, "high": 403.49, "low": 396.835, "volume": 26228279, "sma5": 399.41999999999996, "sma20": 399.44250000000005, "signal": "SELL", "vol_ma20": 33351283.75, "sig_orig": "SELL", "sig_opt": "SELL"}, {"date": "2026-03-18", "open": 396.215, "close": 390.88, "high": 397.09, "low": 390.09, "volume": 25908484, "sma5": 396.80199999999996, "sma20": 399.0975, "signal": null, "vol_ma20": 33485537.1, "sig_orig": null, "sig_opt": null}, {"date": "2026-03-19", "open": 389.19, "close": 388.11, "high": 391.58, "low": 386.15, "volume": 25138772, "sma5": 394.23400000000004, "sma20": 398.6255, "signal": null, "vol_ma20": 33330775.65, "sig_orig": null, "sig_opt": null}, {"date": "2026-03-20", "open": 385.88, "close": 380.96, "high": 386.09, "low": 379.21, "volume": 50853154, "sma5": 391.49800000000005, "sma20": 397.8575, "signal": null, "vol_ma20": 34172670.9, "sig_orig": null, "sig_opt": null}, {"date": "2026-03-23", "open": 382.99, "close": 382.09, "high": 386.3, "low": 380.77, "volume": 29680059, "sma5": 388.108, "sma20": 397.784, "signal": null, "vol_ma20": 33494760.2, "sig_orig": null, "sig_opt": null}, {"date": "2026-03-24", "open": 381.45, "close": 371.83, "high": 381.56, "low": 370.94, "volume": 42733625, "sma5": 382.774, "sma20": 396.971, "signal": null, "vol_ma20": 33937208.8, "sig_orig": null, "sig_opt": null}, {"date": "2026-03-25", "open": 376.01, "close": 370.13, "high": 376.15, "low": 368.72, "volume": 31181163, "sma5": 378.62399999999997, "sma20": 395.493, "signal": null, "vol_ma20": 33314992.8, "sig_orig": null, "sig_opt": null}, {"date": "2026-03-26", "open": 369.905, "close": 365.06, "high": 373.81, "low": 364.28, "volume": 36836574, "sma5": 374.01399999999995, "sma20": 393.70550000000003, "signal": null, "vol_ma20": 33436528.05, "sig_orig": null, "sig_opt": null}, {"date": "2026-03-27", "open": 360.99, "close": 355.86, "high": 361.54, "low": 355.6, "volume": 37883400, "sma5": 368.99399999999997, "sma20": 391.90700000000004, "signal": null, "vol_ma20": 32762338.25, "sig_orig": null, "sig_opt": null}, {"date": "2026-03-30", "open": 360.985, "close": 358.05, "high": 364.45, "low": 355.37, "volume": 44797002, "sma5": 364.18600000000004, "sma20": 389.9275, "signal": null, "vol_ma20": 33228443.0, "sig_orig": null, "sig_opt": null}, {"date": "2026-03-31", "open": 363.64, "close": 369.26, "high": 371.99, "low": 362.16, "volume": 45244365, "sma5": 363.672, "sma20": 388.2395, "signal": null, "vol_ma20": 33580700.8, "sig_orig": null, "sig_opt": null}, {"date": "2026-04-01", "open": 372.58, "close": 368.46, "high": 373.08, "low": 367.29, "volume": 29417206, "sma5": 363.338, "sma20": 386.44800000000004, "signal": null, "vol_ma20": 33261161.6, "sig_orig": null, "sig_opt": null}, {"date": "2026-04-02", "open": 366.295, "close": 372.55, "high": 372.73, "low": 363.24, "volume": 24099067, "sma5": 364.836, "sma20": 384.58700000000005, "signal": null, "vol_ma20": 32516049.2, "sig_orig": null, "sig_opt": null}, {"date": "2026-04-06", "open": 372.58, "close": 371.97, "high": 372.82, "low": 368.591, "volume": 16146572, "sma5": 368.058, "sma20": 382.7830000000001, "signal": null, "vol_ma20": 31767184.85, "sig_orig": null, "sig_opt": null}, {"date": "2026-04-07", "open": 369.43, "close": 371.38, "high": 371.54, "low": 365.65, "volume": 21443349, "sma5": 370.724, "sma20": 380.9270000000001, "signal": null, "vol_ma20": 31332759.6, "sig_orig": null, "sig_opt": null}, {"date": "2026-04-08", "open": 384.07, "close": 373.42, "high": 384.09, "low": 370.5, "volume": 33064818, "sma5": 371.55600000000004, "sma20": 379.35550000000006, "signal": null, "vol_ma20": 31400681.75, "sig_orig": null, "sig_opt": null}, {"date": "2026-04-09", "open": 371.59, "close": 372.16, "high": 372.59, "low": 366.14, "volume": 30435297, "sma5": 372.29600000000005, "sma20": 377.76500000000004, "signal": null, "vol_ma20": 31646839.65, "sig_orig": null, "sig_opt": null}, {"date": "2026-04-10", "open": 372.07, "close": 369.96, "high": 374.73, "low": 369.12, "volume": 28111128, "sma5": 371.778, "sma20": 376.2155000000001, "signal": null, "vol_ma20": 31689201.75, "sig_orig": null, "sig_opt": null}, {"date": "2026-04-13", "open": 372.695, "close": 383.46, "high": 383.63, "low": 370.11, "volume": 35745781, "sma5": 374.076, "sma20": 375.65650000000005, "signal": null, "vol_ma20": 32134090.8, "sig_orig": null, "sig_opt": null}, {"date": "2026-04-14", "open": 387.005, "close": 392.2, "high": 393.78, "low": 385.61, "volume": 37504486, "sma5": 378.24, "sma20": 375.31450000000007, "signal": "BUY", "vol_ma20": 32622629.05, "sig_orig": "BUY", "sig_opt": "BUY"}, {"date": "2026-04-15", "open": 397.09, "close": 410.31, "high": 413.46, "low": 395.82, "volume": 45063389, "sma5": 385.618, "sma20": 375.9050000000001, "signal": null, "vol_ma20": 33564384.55, "sig_orig": null, "sig_opt": null}, {"date": "2026-04-16", "open": 418.95, "close": 419.35, "high": 419.91, "low": 411.23, "volume": 41642361, "sma5": 395.0559999999999, "sma20": 377.3285000000001, "signal": null, "vol_ma20": 34351078.4, "sig_orig": null, "sig_opt": null}, {"date": "2026-04-17", "open": 423.91, "close": 421.88, "high": 430.67, "low": 419.78, "volume": 48568190, "sma5": 405.44000000000005, "sma20": 379.01700000000005, "signal": null, "vol_ma20": 35522549.3, "sig_orig": null, "sig_opt": null}, {"date": "2026-04-20", "open": 420.235, "close": 417.16, "high": 422.42, "low": 415.39, "volume": 27582237, "sma5": 412.18, "sma20": 380.82700000000006, "signal": null, "vol_ma20": 34359003.45, "sig_orig": null, "sig_opt": null}, {"date": "2026-04-21", "open": 419.33, "close": 423.25, "high": 426.27, "low": 416.29, "volume": 32048495, "sma5": 418.39, "sma20": 382.88500000000005, "signal": null, "vol_ma20": 34477425.25, "sig_orig": null, "sig_opt": null}, {"date": "2026-04-22", "open": 425.275, "close": 432.01, "high": 432.79, "low": 422.76, "volume": 29378173, "sma5": 422.73, "sma20": 385.89400000000006, "signal": null, "vol_ma20": 33809652.65, "sig_orig": null, "sig_opt": null}, {"date": "2026-04-23", "open": 418.975, "close": 414.84, "high": 422.75, "low": 410.5, "volume": 38307959, "sma5": 421.828, "sma20": 388.12950000000006, "signal": null, "vol_ma20": 34165992.45, "sig_orig": null, "sig_opt": null}, {"date": "2026-04-24", "open": 416.06, "close": 423.71, "high": 424.04, "low": 414.89, "volume": 27457404, "sma5": 422.19399999999996, "sma20": 391.06200000000007, "signal": null, "vol_ma20": 33697033.95, "sig_orig": null, "sig_opt": null}, {"date": "2026-04-27", "open": 421.465, "close": 423.91, "high": 426.2, "low": 416.16, "volume": 30867303, "sma5": 423.544, "sma20": 394.46450000000004, "signal": null, "vol_ma20": 33346229.1, "sig_orig": null, "sig_opt": null}, {"date": "2026-04-28", "open": 423.66, "close": 428.34, "high": 429.01, "low": 420.99, "volume": 30438087, "sma5": 424.562, "sma20": 397.97900000000004, "signal": null, "vol_ma20": 32628283.35, "sig_orig": null, "sig_opt": null}, {"date": "2026-04-29", "open": 423.665, "close": 423.55, "high": 425.91, "low": 419.38, "volume": 38288316, "sma5": 422.87, "sma20": 400.69350000000003, "signal": null, "vol_ma20": 32280480.9, "sig_orig": null, "sig_opt": null}, {"date": "2026-04-30", "open": 409.9, "close": 406.87, "high": 413.51, "low": 397.1, "volume": 70909408, "sma5": 421.276, "sma20": 402.614, "signal": null, "vol_ma20": 34355091.0, "sig_orig": null, "sig_opt": null}, {"date": "2026-05-01", "open": 411.89, "close": 413.53, "high": 416.2, "low": 409.525, "volume": 31372361, "sma5": 419.23999999999995, "sma20": 404.663, "signal": null, "vol_ma20": 34718755.7, "sig_orig": null, "sig_opt": null}, {"date": "2026-05-04", "open": 410.63, "close": 412.71, "high": 419.87, "low": 409.89, "volume": 28066528, "sma5": 417.0, "sma20": 406.7, "signal": null, "vol_ma20": 35314753.5, "sig_orig": null, "sig_opt": null}, {"date": "2026-05-05", "open": 414.41, "close": 410.47, "high": 415.87, "low": 407.89, "volume": 25700891, "sma5": 413.42600000000004, "sma20": 408.6545, "signal": null, "vol_ma20": 35527630.6, "sig_orig": null, "sig_opt": null}, {"date": "2026-05-06", "open": 407.09, "close": 413.05, "high": 417.513, "low": 404.2, "volume": 30285898, "sma5": 411.326, "sma20": 410.63599999999997, "signal": null, "vol_ma20": 35388684.6, "sig_orig": null, "sig_opt": null}, {"date": "2026-05-07", "open": 419.2, "close": 419.86, "high": 427.07, "low": 417.85, "volume": 34942445, "sma5": 413.924, "sma20": 413.021, "signal": null, "vol_ma20": 35614042.0, "sig_orig": null, "sig_opt": null}, {"date": "2026-05-08", "open": 416.475, "close": 414.21, "high": 417.72, "low": 413.09, "volume": 33383790, "sma5": 414.06000000000006, "sma20": 415.2335, "signal": "SELL", "vol_ma20": 35877675.1, "sig_orig": "SELL", "sig_opt": "SELL"}, {"date": "2026-05-11", "open": 406.96, "close": 411.75, "high": 411.78, "low": 404.59, "volume": 35657943, "sma5": 413.86800000000005, "sma20": 416.64799999999997, "signal": null, "vol_ma20": 35873283.2, "sig_orig": null, "sig_opt": null}, {"date": "2026-05-12", "open": 413.57, "close": 406.86, "high": 414.59, "low": 405.73, "volume": 38594221, "sma5": 413.146, "sma20": 417.38100000000003, "signal": null, "vol_ma20": 35927769.95, "sig_orig": null, "sig_opt": null}, {"date": "2026-05-13", "open": 402.29, "close": 404.3, "high": 405.4, "low": 400.12, "volume": 29667073, "sma5": 411.396, "sma20": 417.0804999999999, "signal": null, "vol_ma20": 35157954.15, "sig_orig": null, "sig_opt": null}, {"date": "2026-05-14", "open": 403.57, "close": 408.52, "high": 410.93, "low": 399.97, "volume": 27077542, "sma5": 409.12800000000004, "sma20": 416.53900000000004, "signal": null, "vol_ma20": 34429713.2, "sig_orig": null, "sig_opt": null}, {"date": "2026-05-15", "open": 413.36, "close": 421.01, "high": 427.26, "low": 412.0, "volume": 50771160, "sma5": 410.488, "sma20": 416.4955, "signal": null, "vol_ma20": 34539861.7, "sig_orig": null, "sig_opt": null}, {"date": "2026-05-18", "open": 415.71, "close": 422.63, "high": 424.21, "low": 414.7, "volume": 32564130, "sma5": 412.66400000000004, "sma20": 416.76899999999995, "signal": null, "vol_ma20": 34788956.35, "sig_orig": null, "sig_opt": null}, {"date": "2026-05-19", "open": 428.99, "close": 416.51, "high": 431.79, "low": 415.58, "volume": 33018678, "sma5": 414.59400000000005, "sma20": 416.43199999999996, "signal": null, "vol_ma20": 34837465.5, "sig_orig": null, "sig_opt": null}, {"date": "2026-05-20", "open": 413.255, "close": 420.15, "high": 421.19, "low": 410.39, "volume": 27864016, "sma5": 417.76399999999995, "sma20": 415.83900000000006, "signal": "BUY", "vol_ma20": 34761757.65, "sig_orig": "BUY", "sig_opt": null}, {"date": "2026-05-21", "open": 424.75, "close": 419.09, "high": 426.34, "low": 415.71, "volume": 31393469, "sma5": 419.87800000000004, "sma20": 416.0514999999999, "signal": null, "vol_ma20": 34416033.15, "sig_orig": null, "sig_opt": null}, {"date": "2026-05-22", "open": 419.535, "close": 418.57, "high": 424.4, "low": 416.33, "volume": 22390344, "sma5": 419.39, "sma20": 415.7945000000001, "signal": null, "vol_ma20": 34162680.15, "sig_orig": null, "sig_opt": null}, {"date": "2026-05-26", "open": 416.43, "close": 416.03, "high": 419.77, "low": 413.02, "volume": 30398049, "sma5": 418.07, "sma20": 415.4005, "signal": null, "vol_ma20": 34139217.45, "sig_orig": null, "sig_opt": null}, {"date": "2026-05-27", "open": 411.01, "close": 412.67, "high": 415.94, "low": 409.58, "volume": 28901479, "sma5": 417.30199999999996, "sma20": 414.617, "signal": null, "vol_ma20": 34062387.05, "sig_orig": null, "sig_opt": null}, {"date": "2026-05-28", "open": 412.975, "close": 426.99, "high": 429.49, "low": 412.67, "volume": 47250541, "sma5": 418.6700000000001, "sma20": 414.78900000000004, "signal": null, "vol_ma20": 34510498.3, "sig_orig": null, "sig_opt": null}, {"date": "2026-05-29", "open": 432.545, "close": 450.24, "high": 450.33, "low": 432.36, "volume": 79654376, "sma5": 424.9, "sma20": 416.9575, "signal": null, "vol_ma20": 34947746.7, "sig_orig": null, "sig_opt": null}, {"date": "2026-06-01", "open": 464.84, "close": 460.52, "high": 466.32, "low": 458.27, "volume": 53628910, "sma5": 433.28999999999996, "sma20": 419.30699999999996, "signal": null, "vol_ma20": 36060574.15, "sig_orig": null, "sig_opt": null}, {"date": "2026-06-02", "open": 446.88, "close": 441.31, "high": 453.5, "low": 440.43, "volume": 37036801, "sma5": 438.346, "sma20": 420.73699999999997, "signal": null, "vol_ma20": 36509087.8, "sig_orig": null, "sig_opt": null}, {"date": "2026-06-03", "open": 438.45, "close": 427.34, "high": 440.39, "low": 424.25, "volume": 39037007, "sma5": 441.28000000000003, "sma20": 421.5804999999999, "signal": null, "vol_ma20": 37175893.6, "sig_orig": null, "sig_opt": null}, {"date": "2026-06-04", "open": 435.81, "close": 428.05, "high": 436.15, "low": 426.41, "volume": 26899511, "sma5": 441.492, "sma20": 422.33050000000003, "signal": null, "vol_ma20": 37006574.25, "sig_orig": null, "sig_opt": null}, {"date": "2026-06-05", "open": 428.34, "close": 416.67, "high": 429.47, "low": 414.4, "volume": 34782164, "sma5": 434.77799999999996, "sma20": 422.171, "signal": null, "vol_ma20": 36998560.2, "sig_orig": null, "sig_opt": null}, {"date": "2026-06-08", "open": 414.14, "close": 411.74, "high": 417.16, "low": 408.56, "volume": 32086714, "sma5": 425.02200000000005, "sma20": 422.0475, "signal": null, "vol_ma20": 36933706.4, "sig_orig": null, "sig_opt": null}, {"date": "2026-06-09", "open": 409.03, "close": 403.41, "high": 411.98, "low": 398.48, "volume": 35317302, "sma5": 417.442, "sma20": 421.63050000000004, "signal": "SELL", "vol_ma20": 36916674.35, "sig_orig": "SELL", "sig_opt": "SELL"}, {"date": "2026-06-10", "open": 398.55, "close": 397.36, "high": 405.04, "low": 397.16, "volume": 32576041, "sma5": 411.446, "sma20": 421.1555, "signal": null, "vol_ma20": 36615765.35, "sig_orig": null, "sig_opt": null}, {"date": "2026-06-11", "open": 395.205, "close": 390.34, "high": 396.85, "low": 384.0, "volume": 47224135, "sma5": 403.90400000000005, "sma20": 420.4575, "signal": null, "vol_ma20": 37493618.45, "sig_orig": null, "sig_opt": null}, {"date": "2026-06-12", "open": 391.43, "close": 390.74, "high": 391.74, "low": 382.27, "volume": 34922036, "sma5": 398.718, "sma20": 419.56850000000003, "signal": null, "vol_ma20": 37885843.15, "sig_orig": null, "sig_opt": null}, {"date": "2026-06-15", "open": 396.795, "close": 399.76, "high": 401.75, "low": 392.845, "volume": 32266437, "sma5": 396.322, "sma20": 418.506, "signal": null, "vol_ma20": 36960607.0, "sig_orig": null, "sig_opt": null}, {"date": "2026-06-16", "open": 395.79, "close": 393.83, "high": 396.84, "low": 390.69, "volume": 31506846, "sma5": 394.406, "sma20": 417.066, "signal": null, "vol_ma20": 36907742.8, "sig_orig": null, "sig_opt": null}, {"date": "2026-06-17", "open": 390.25, "close": 378.91, "high": 390.37, "low": 377.32, "volume": 41987834, "sma5": 390.716, "sma20": 415.186, "signal": null, "vol_ma20": 37356200.6, "sig_orig": null, "sig_opt": null}, {"date": "2026-06-18", "open": 377.82, "close": 379.4, "high": 381.37, "low": 373.28, "volume": 59714157, "sma5": 388.52799999999996, "sma20": 413.14849999999996, "signal": null, "vol_ma20": 38948707.65, "sig_orig": null, "sig_opt": null}, {"date": "2026-06-22", "open": 375.74, "close": 367.34, "high": 381.63, "low": 367.07, "volume": 45171106, "sma5": 383.848, "sma20": 410.561, "signal": null, "vol_ma20": 39637589.5, "sig_orig": null, "sig_opt": null}, {"date": "2026-06-23", "open": 372.38, "close": 373.94, "high": 377.22, "low": 370.67, "volume": 40647605, "sma5": 378.68399999999997, "sma20": 408.32949999999994, "signal": null, "vol_ma20": 40550452.55, "sig_orig": null, "sig_opt": null}, {"date": "2026-06-24", "open": 371.57, "close": 365.46, "high": 378.88, "low": 364.78, "volume": 44509854, "sma5": 373.01, "sma20": 405.801, "signal": null, "vol_ma20": 41256042.8, "sig_orig": null, "sig_opt": null}, {"date": "2026-06-25", "open": 362.77, "close": 352.83, "high": 364.23, "low": 349.2, "volume": 66360473, "sma5": 367.794, "sma20": 402.80899999999997, "signal": null, "vol_ma20": 43128992.5, "sig_orig": null, "sig_opt": null}, {"date": "2026-06-26", "open": 357.15, "close": 372.97, "high": 376.61, "low": 355.43, "volume": 186201631, "sma5": 366.508, "sma20": 400.10799999999995, "signal": null, "vol_ma20": 50076547.0, "sig_orig": null, "sig_opt": null}, {"date": "2026-06-29", "open": 377.5, "close": 368.57, "high": 380.5, "low": 359.9, "volume": 51229885, "sma5": 366.754, "sma20": 396.0245, "signal": null, "vol_ma20": 48655322.45, "sig_orig": null, "sig_opt": null}, {"date": "2026-06-30", "open": 371.03, "close": 373.02, "high": 374.15, "low": 367.45, "volume": 44945696, "sma5": 366.57, "sma20": 391.6495, "signal": null, "vol_ma20": 48221161.75, "sig_orig": null, "sig_opt": null}, {"date": "2026-07-01", "open": 380.825, "close": 384.28, "high": 388.83, "low": 374.89, "volume": 48065801, "sma5": 370.33399999999995, "sma20": 388.798, "signal": null, "vol_ma20": 48772611.75, "sig_orig": null, "sig_opt": null}, {"date": "2026-07-02", "open": 384.48, "close": 390.49, "high": 392.2, "low": 383.7, "volume": 42194409, "sma5": 377.866, "sma20": 386.9555, "signal": null, "vol_ma20": 48930481.85, "sig_orig": null, "sig_opt": null}, {"date": "2026-07-06", "open": 387.04, "close": 386.74, "high": 389.15, "low": 381.22, "volume": 34224543, "sma5": 380.62, "sma20": 384.88999999999993, "signal": null, "vol_ma20": 49296733.45, "sig_orig": null, "sig_opt": null}, {"date": "2026-07-07", "open": 392.49, "close": 388.84, "high": 395.57, "low": 388.22, "volume": 29297524, "sma5": 384.674, "sma20": 383.49850000000004, "signal": "BUY", "vol_ma20": 49022501.45, "sig_orig": "BUY", "sig_opt": null}, {"date": "2026-07-08", "open": 384.03, "close": 383.34, "high": 385.31, "low": 381.33, "volume": 25908255, "sma5": 386.73799999999994, "sma20": 382.07849999999996, "signal": null, "vol_ma20": 48713578.5, "sig_orig": null, "sig_opt": null}, {"date": "2026-07-09", "open": 374.45, "close": 384.36, "high": 384.65, "low": 373.35, "volume": 31083197, "sma5": 386.754, "sma20": 381.12600000000003, "signal": null, "vol_ma20": 48501873.25, "sig_orig": null, "sig_opt": null}];
+        
+        const labels = data.map(d => d.date.slice(5));
+        const prices = data.map(d => d.close);
+        const sma5 = data.map(d => d.sma5);
+        const sma20 = data.map(d => d.sma20);
+        
+        function buildSigPoints(sigKey) {
+            const buys = [], sells = [];
+            data.forEach((d, i) => {
+                if (d[sigKey] === 'BUY') buys.push({x: labels[i], y: d.close});
+                if (d[sigKey] === 'SELL') sells.push({x: labels[i], y: d.close});
+            });
+            return [buys, sells];
+        }
+        
+        function makeChart(id, sigKey, color) {
+            const [bp, sp] = buildSigPoints(sigKey);
+            const ctx = document.getElementById(id).getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: '收盘价', data: prices, borderColor: '#2c3e50', backgroundColor: 'rgba(44,62,80,0.03)', borderWidth: 1.5, fill: true, tension: 0.3, pointRadius: 0.5, order: 3 },
+                        { label: 'SMA5', data: sma5, borderColor: '#e67e22', borderWidth: 1.5, tension: 0.3, pointRadius: 0, order: 2 },
+                        { label: 'SMA20', data: sma20, borderColor: '#3498db', borderWidth: 1.5, tension: 0.3, pointRadius: 0, order: 1 },
+                        { label: '买入', data: bp, backgroundColor: '#27ae60', borderColor: '#27ae60', pointStyle: 'triangle', pointRadius: 8, showLine: false, order: 0 },
+                        { label: '卖出', data: sp, backgroundColor: '#e74c3c', borderColor: '#e74c3c', pointStyle: 'rectRot', pointRadius: 8, showLine: false, order: 0 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: true, position: 'top', labels: { boxWidth: 12, padding: 8, font: { size: 10 } } },
+                        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': $' + ctx.parsed.y.toFixed(2) } }
+                    },
+                    scales: {
+                        x: { ticks: { maxTicksLimit: 15, font: { size: 9 } } },
+                        y: { beginAtZero: false, ticks: { callback: v => '$' + v, font: { size: 9 } } }
+                    }
+                }
+            });
+        }
+        
+        makeChart('chartOrig', 'sig_orig');
+        makeChart('chartOpt', 'sig_opt');
+    </script>
+</body>
+</html>
